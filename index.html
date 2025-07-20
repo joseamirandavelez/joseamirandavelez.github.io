@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Umami Analytics on GitHub Pages</title>
   <!-- Umami Tracking Script -->
-  <script async src="https://umami.is/script.js" data-website-id="7280d755-f756-4aca-b5ea-728e6e7340cc"></script>
+  <script async src="https://umami.is/script.js" data-website-id="YOUR_WEBSITE_ID"></script>
   <!-- Chart.js for Visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <!-- CSP Meta Tag for GitHub Pages -->
+  <!-- Custom Analytics Script -->
+  <script src="/analytics.js"></script>
+  <!-- CSP Meta Tag -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://umami.is https://cdn.jsdelivr.net; connect-src 'self' https://api.umami.is; style-src 'self' 'unsafe-inline';">
   <style>
     #countryChart { max-width: 600px; margin: 20px auto; }
@@ -28,82 +30,5 @@
     <tbody></tbody>
   </table>
   <canvas id="countryChart"></canvas>
-
-  <script>
-    // Umami API settings
-    const API_TOKEN = 'api_ZIQ4GZsaiDOnfS3LIEbqniqFSaGuahTg'; // Replace with your Umami API token
-    const WEBSITE_ID = '7280d755-f756-4aca-b5ea-728e6e7340cc'; // Replace with your Umami website ID
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const endDate = new Date().toISOString().split('T')[0];
-    const API_URL = `https://api.umami.is/v1/websites/${WEBSITE_ID}/stats?startAt=${startDate}&endAt=${endDate}`;
-    const BREAKDOWN_URL = `https://api.umami.is/v1/websites/${WEBSITE_ID}/metrics?type=country&startAt=${startDate}&endAt=${endDate}&limit=5`;
-
-    // Fetch total visitors
-    async function fetchVisitorCount() {
-      try {
-        const response = await fetch(API_URL, {
-          headers: { Authorization: `Bearer ${API_TOKEN}` },
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        const visitors = data.pageviews.value; // Umami uses pageviews as a proxy
-        document.getElementById('visitorCount').textContent = `Total Page Views (Last 30 Days): ${visitors}`;
-      } catch (error) {
-        console.error('Error fetching visitor count:', error);
-        document.getElementById('visitorCount').textContent = 'Error loading visitor data';
-      }
-    }
-
-    // Fetch top countries and render table/chart
-    async function fetchTopCountries() {
-      try {
-        const response = await fetch(BREAKDOWN_URL, {
-          headers: { Authorization: `Bearer ${API_TOKEN}` },
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        const countries = data;
-
-        // Populate table
-        const tbody = document.querySelector('#countryTable tbody');
-        tbody.innerHTML = countries.map(item => `
-          <tr>
-            <td>${item.x || 'Unknown'}</td>
-            <td>${item.y}</td>
-          </tr>
-        `).join('');
-
-        // Render Chart.js bar chart
-        const ctx = document.getElementById('countryChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: countries.map(item => item.x || 'Unknown'),
-            datasets: [{
-              label: 'Visitors by Country',
-              data: countries.map(item => item.y),
-              backgroundColor: ['#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#E7E9ED'],
-              borderColor: ['#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#E7E9ED'],
-              borderWidth: 1,
-            }],
-          },
-          options: {
-            scales: {
-              y: { beginAtZero: true, title: { display: true, text: 'Visitors' } },
-              x: { title: { display: true, text: 'Country' } },
-            },
-            plugins: { legend: { display: false } },
-          },
-        });
-      } catch (error) {
-        console.error('Error fetching country data:', error);
-        document.querySelector('#countryTable tbody').innerHTML = '<tr><td colspan="2">Error loading country data</td></tr>';
-      }
-    }
-
-    // Initialize
-    fetchVisitorCount();
-    fetchTopCountries();
-  </script>
 </body>
 </html>
