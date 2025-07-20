@@ -1,27 +1,42 @@
 // Umami API settings (via Cloudflare Worker proxy)
 const WEBSITE_ID = '7280d755-f756-4aca-b5ea-728e6e7340cc';
 const getUnixTimestamp = (daysAgo = 0) => {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  const timestamp = date.getTime();
-  if (isNaN(timestamp)) {
-    console.error('Invalid timestamp generated:', { daysAgo, timestamp });
-    return Date.now() - (daysAgo * 24 * 60 * 60 * 1000); // Fallback
+  try {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    const timestamp = date.getTime();
+    console.log('Generated timestamp:', { daysAgo, date: date.toISOString(), timestamp });
+    if (isNaN(timestamp)) {
+      console.error('NaN timestamp detected:', { daysAgo, date: date.toISOString() });
+      const fallback = Date.now() - (daysAgo * 24 * 60 * 60 * 1000);
+      console.log('Using fallback timestamp:', fallback);
+      return fallback;
+    }
+    return timestamp;
+  } catch (error) {
+    console.error('Error in getUnixTimestamp:', error, { daysAgo });
+    const fallback = Date.now() - (daysAgo * 24 * 60 * 60 * 1000);
+    console.log('Using fallback timestamp due to error:', fallback);
+    return fallback;
   }
-  return timestamp;
 };
 const startDate = getUnixTimestamp(30); // 30 days ago (milliseconds)
 const endDate = getUnixTimestamp(0); // Today (milliseconds)
+console.log('Final API timestamps:', { startDate, endDate });
 const API_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/stats?startAt=${startDate}&endAt=${endDate}`;
 const BREAKDOWN_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/metrics?type=country&startAt=${startDate}&endAt=${endDate}&limit=5`;
 
 // Fetch total visitors
 async function fetchVisitorCount() {
   try {
+    console.log('Fetching visitor count from:', API_URL);
     const response = await fetch(API_URL, {
       headers: { 'Accept': 'application/json' },
     });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+    }
     const data = await response.json();
     const visitors = data.pageviews.value; // Umami uses pageviews as a proxy
     document.getElementById('visitorCount').textContent = `Total Page Views (Last 30 Days): ${visitors}`;
@@ -34,50 +49,10 @@ async function fetchVisitorCount() {
 // Fetch top countries and render table/chart
 async function fetchTopCountries() {
   try {
+    console.log('Fetching country data from:', BREAKDOWN_URL);
     const response = await fetch(BREAKDOWN_URL, {
       headers: { 'Accept': 'application/json' },
     });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    const data = await response.json();
-    const countries = data;
-
-    // Populate table
-    const tbody = document.querySelector('#countryTable tbody');
-    tbody.innerHTML = countries.map(item => `
-      <tr>
-        <td>${item.x || 'Unknown'}</td>
-        <td>${item.y}</td>
-      </tr>
-    `).join('');
-
-    // Render Chart.js bar chart
-    const ctx = document.getElementById('countryChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: countries.map(item => item.x || 'Unknown'),
-        datasets: [{
-          label: 'Visitors by Country',
-          data: countries.map(item => item.y),
-          backgroundColor: ['#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#E7E9ED'],
-          borderColor: ['#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#E7E9ED'],
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'Visitors' } },
-          x: { title: { display: true, text: 'Country' } },
-        },
-        plugins: { legend: { display: false } },
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching country data:', error, error.stack);
-    document.querySelector('#countryTable tbody').innerHTML = '<tr><td colspan="2">Error loading country data</td></tr>';
-  }
-}
-
-// Initialize
-fetchVisitorCount();
-fetchTopCountries();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP
