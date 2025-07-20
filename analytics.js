@@ -1,7 +1,17 @@
 // Umami API settings (via Cloudflare Worker proxy)
 const WEBSITE_ID = '7280d755-f756-4aca-b5ea-728e6e7340cc';
-const startDate = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days ago (milliseconds)
-const endDate = Date.now(); // Today (milliseconds)
+const getUnixTimestamp = (daysAgo = 0) => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  const timestamp = date.getTime();
+  if (isNaN(timestamp)) {
+    console.error('Invalid timestamp generated:', { daysAgo, timestamp });
+    return Date.now() - (daysAgo * 24 * 60 * 60 * 1000); // Fallback
+  }
+  return timestamp;
+};
+const startDate = getUnixTimestamp(30); // 30 days ago (milliseconds)
+const endDate = getUnixTimestamp(0); // Today (milliseconds)
 const API_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/stats?startAt=${startDate}&endAt=${endDate}`;
 const BREAKDOWN_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/metrics?type=country&startAt=${startDate}&endAt=${endDate}&limit=5`;
 
