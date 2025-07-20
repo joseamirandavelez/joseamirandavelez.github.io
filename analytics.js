@@ -1,7 +1,7 @@
-// Umami API settings (via proxy)
+// Umami API settings (via Cloudflare Worker proxy)
 const WEBSITE_ID = '7280d755-f756-4aca-b5ea-728e6e7340cc';
-const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-const endDate = new Date().toISOString().split('T')[0];
+const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 2025-06-19
+const endDate = new Date().toISOString().split('T')[0]; // 2025-07-19
 const API_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/stats?startAt=${startDate}&endAt=${endDate}`;
 const BREAKDOWN_URL = `https://effectbuilder.joseamirandavelez.workers.dev/api/umami/v1/websites/${WEBSITE_ID}/metrics?type=country&startAt=${startDate}&endAt=${endDate}&limit=5`;
 
@@ -14,7 +14,7 @@ async function fetchVisitorCount() {
     const visitors = data.pageviews.value; // Umami uses pageviews as a proxy
     document.getElementById('visitorCount').textContent = `Total Page Views (Last 30 Days): ${visitors}`;
   } catch (error) {
-    console.error('Error fetching visitor count:', error);
+    console.error('Error fetching visitor count:', error, error.stack);
     document.getElementById('visitorCount').textContent = 'Error loading visitor data';
   }
 }
@@ -59,7 +59,7 @@ async function fetchTopCountries() {
       },
     });
   } catch (error) {
-    console.error('Error fetching country data:', error);
+    console.error('Error fetching country data:', error, error.stack);
     document.querySelector('#countryTable tbody').innerHTML = '<tr><td colspan="2">Error loading country data</td></tr>';
   }
 }
@@ -67,6 +67,3 @@ async function fetchTopCountries() {
 // Initialize
 fetchVisitorCount();
 fetchTopCountries();
-
-
-api_ZIQ4GZsaiDOnfS3LIEbqniqFSaGuahTg
